@@ -1,0 +1,103 @@
+{
+  "sections": [
+    {
+      "id": "todays-maamulat",
+      "title": "Today's Maamulat",
+      "titleUr": "آج کے معمولات",
+      "categories": [
+        {
+          "id": "faraiz",
+          "name": "فرائض",
+          "nameEn": "Obligatory Prayers",
+          "color": "#FF6B35",
+          "items": [
+            { "id": "fajr", "name": "فجر باجماعت", "hasanat": 27 },
+            { "id": "zuhr", "name": "ظہر باجماعت", "hasanat": 27 },
+            { "id": "asr", "name": "عصر باجماعت", "hasanat": 27 },
+            { "id": "maghrib", "name": "مغرب باجماعت", "hasanat": 27 },
+            { "id": "isha", "name": "عشاء باجماعت", "hasanat": 27 },
+            { "id": "takbeer", "name": "تکبیر اولیٰ (5\\1)", "hasanat": 50 }
+          ]
+        },
+        {
+          "id": "quran",
+          "name": "قرآن تلاوت",
+          "nameEn": "Quran Recitation",
+          "color": "#3498DB",
+          "items": [
+            { "id": "yaseen", "name": "سورہ یسین", "hasanat": 100 },
+            { "id": "waqiah", "name": "سورہ واقعہ", "hasanat": 100 },
+            { "id": "mulk", "name": "سورہ ملک", "hasanat": 100 },
+            { "id": "tilawat", "name": "تلاوت", "hasanat": 50 }
+          ]
+        },
+        {
+          "id": "azkar-morning",
+          "name": "صبح کے اذکار",
+          "nameEn": "Morning Adhkar",
+          "color": "#9B59B6",
+          "items": [
+            { "id": "istighfar-m", "name": "استغفار 100", "hasanat": 10 },
+            { "id": "durood-m", "name": "درود شریف 100", "hasanat": 10 },
+            { "id": "kalima3-m", "name": "تیسرا کلمہ 100", "hasanat": 10 },
+            { "id": "kalima1-m", "name": "پہلا کلمہ 100", "hasanat": 10 }
+          ]
+        },
+        {
+          "id": "azkar-evening",
+          "name": "شام کے اذکار",
+          "nameEn": "Evening Adhkar",
+          "color": "#9B59B6",
+          "items": [
+            { "id": "istighfar-e", "name": "استغفار 100", "hasanat": 10 },
+            { "id": "durood-e", "name": "درود شریف 100", "hasanat": 10 },
+            { "id": "kalima3-e", "name": "تیسرا کلمہ100", "hasanat": 10 },
+            { "id": "kalima1-e", "name": "پہلا کلمہ 100", "hasanat": 10 }
+          ]
+        },
+        {
+          "id": "nawafil",
+          "name": "نوافل",
+          "nameEn": "Voluntary Prayers",
+          "color": "#27AE60",
+          "items": [
+            { "id": "tahajjud", "name": "تہجد", "hasanat": 100 },
+            { "id": "ishraq", "name": "اشراق", "hasanat": 50 },
+            { "id": "chasht", "name": "چاشت", "hasanat": 50 },
+            { "id": "awabeen", "name": "اوابین", "hasanat": 50 }
+          ]
+        },
+        {
+          "id": "duas",
+          "name": "دعائیں",
+          "nameEn": "Duas",
+          "color": "#1A1A2E",
+          "items": [
+            { "id": "tahajjud-dua", "name": "تہجد کے وقت دعا", "hasanat": 50 }
+          ]
+        },
+        {
+          "id": "hifazat",
+          "name": "حفاظت کرنے کی چیزیں",
+          "nameEn": "Protection",
+          "color": "#F1C40F",
+          "items": [
+            { "id": "nazar", "name": "نظر کی حفاظت", "hasanat": 30 },
+            { "id": "zubaan", "name": "زبان کی حفاظت", "hasanat": 30 },
+            { "id": "kaan", "name": "کان کی حفاظت", "hasanat": 30 }
+          ]
+        },
+        {
+          "id": "schedule",
+          "name": "سونے اور جاگنے کا وقت",
+          "nameEn": "Sleep Schedule",
+          "color": "#8B4513",
+          "items": [
+            { "id": "wake-time", "name": "جاگنے کا وقت", "hasanat": 10, "isTime": true },
+            { "id": "sleep-time", "name": "سونے کا وقت", "hasanat": 10, "isTime": true }
+          ]
+        }
+      ]
+    }
+  ]
+}
