@@ -32,7 +32,7 @@ if (
 }
 
 // Common emojis for category icons
-const EMOJI_OPTIONS = ['📿', '📖', '🌅', '🌙', '☀️', '🤲', '💚', '⭐', '🕋', '🌳', '💎', '🔥', '✨', '🌸', '🎯', '📌'];
+const EMOJI_OPTIONS = ['📿', '📖', '🌙', '☀️', '🤲', '⭐', '🤍', '🕋', '🌳', '💎', '🔥', '✨', '🌸', '🎯', '📌', '⏰'];
 
 /**
  * Modal for editing maamulat categories and items
@@ -157,7 +157,7 @@ export function MaamulatEditor({ visible, onClose }: MaamulatEditorProps) {
                 keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 40}
             >
                 {/* Header */}
-                <View style={[styles.header, { borderBottomColor: colors.border }]}>
+                <View style={[styles.header, { borderBottomColor: colors.border, paddingHorizontal: 20, paddingTop: 20 }]}>
                     <Text variant="h3" weight="bold">Edit Maamulat</Text>
                     <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                         <Ionicons name="close" size={24} color={colors.textPrimary} />

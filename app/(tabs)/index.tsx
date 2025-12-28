@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import {
     View,
     ScrollView,
@@ -6,13 +6,14 @@ import {
     SafeAreaView,
     TouchableOpacity,
 } from 'react-native';
+import { useScrollToTop } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { Text, Card, Checkbox, TimePicker } from '@/components/ui';
 import { WeekdayRow, ScoreCard, ProgressBar, QuickStats, PrayerTimesWidget, MaamulatEditor } from '@/components/home';
 import { useTheme } from '@/hooks';
 import { useMaamulatStore, useUserStore } from '@/stores';
 import { calculateTaskHasanat, formatHasanat } from '@/utils/hasanat';
-import { formatDateUrdu, getWeekdayIndex, msUntilMidnight } from '@/utils/dateUtils';
+import { formatDateUrdu, getWeekdayIndex, msUntilMidnight, getTodayString } from '@/utils/dateUtils';
 import { spacing, categoryColors } from '@/constants/Colors';
 
 
@@ -44,10 +45,12 @@ function CategorySection({
     category,
     onToggleItem,
     onSetTime,
+    readOnly = false,
 }: {
     category: { id: string; name: string; color: string; emoji?: string; items: { id: string; name: string; completed: boolean; isTime?: boolean; timeValue?: string }[] };
     onToggleItem: (categoryId: string, itemId: string) => void;
     onSetTime?: (categoryId: string, itemId: string, time: string) => void;
+    readOnly?: boolean;
 }) {
     const { colors } = useTheme();
     const completedCount = category.items.filter(i => i.completed).length;
@@ -56,7 +59,7 @@ function CategorySection({
     const defaultEmojis: Record<string, string> = {
         faraiz: '🕋',
         quran: '📖',
-        'azkar-morning': '🌅',
+        'azkar-morning': '☀️',
         nawafil: '🌙',
     };
     const emoji = category.emoji || defaultEmojis[category.id] || '📿';
@@ -80,22 +83,25 @@ function CategorySection({
                     <View key={item.id} style={styles.itemRow}>
                         {item.isTime ? (
                             // Time picker for schedule items
-                            <View style={styles.timeItemRow}>
+                            <View style={[styles.timeItemRow, readOnly && { opacity: 0.5 }]}>
                                 <Text variant="body" style={{ flex: 1, textAlign: 'left' }}>
                                     {item.name}
                                 </Text>
-                                <TimePicker
-                                    value={item.timeValue || null}
-                                    onChange={(time) => onSetTime?.(category.id, item.id, time)}
-                                />
+                                <View pointerEvents={readOnly ? 'none' : 'auto'}>
+                                    <TimePicker
+                                        value={item.timeValue || null}
+                                        onChange={(time) => onSetTime?.(category.id, item.id, time)}
+                                    />
+                                </View>
                             </View>
                         ) : (
                             // Checkbox for regular items
                             <Checkbox
                                 checked={item.completed}
-                                onToggle={() => onToggleItem(category.id, item.id)}
+                                onToggle={() => !readOnly && onToggleItem(category.id, item.id)}
                                 label={item.name}
                                 labelPosition="left"
+                                disabled={readOnly}
                             />
                         )}
                     </View>
@@ -110,14 +116,6 @@ function CategorySection({
  */
 export default function HomeScreen() {
     const { colors } = useTheme();
-    const [currentDate, setCurrentDate] = useState(new Date());
-    const [showEditor, setShowEditor] = useState(false);
-    const scrollRef = useRef<ScrollView>(null);
-
-    const scrollToTop = () => {
-        scrollRef.current?.scrollTo({ y: 0, animated: true });
-    };
-
     // Stores
     const {
         categories,
@@ -127,6 +125,8 @@ export default function HomeScreen() {
         getCompletionStats,
         checkAndResetDay,
         recordDayEnd,
+        dayRecords,
+        history,
     } = useMaamulatStore();
 
     const {
@@ -140,6 +140,52 @@ export default function HomeScreen() {
         dismissStreakAlert,
         checkNewDay,
     } = useUserStore();
+
+    // UI State
+    const [selectedDateStr, setSelectedDateStr] = useState<string>(getTodayString());
+    const [currentDate, setCurrentDate] = useState(new Date());
+    const [showEditor, setShowEditor] = useState(false);
+    const scrollRef = useRef<ScrollView>(null);
+    useScrollToTop(scrollRef);
+    const listYRef = useRef(0);
+    const today = getTodayString();
+
+    const isTodayView = selectedDateStr === getTodayString();
+
+    // Auto-scroll to history when past date selected
+    useEffect(() => {
+        if (!isTodayView && listYRef.current > 0) {
+            scrollRef.current?.scrollTo({ y: listYRef.current, animated: true });
+        }
+    }, [selectedDateStr, isTodayView]);
+
+    // Get categories to display (Today or History)
+    const displayCategories = isTodayView ? categories : (history?.[selectedDateStr] || []);
+
+    // Memoize history stats for WeekdayRow
+    const historyStats = useMemo(() => {
+        const stats: Record<string, { percent: number; completed: boolean }> = {};
+        if (dayRecords) {
+            dayRecords.forEach(day => {
+                stats[day.date] = {
+                    percent: day.completionPercent,
+                    completed: day.completionPercent >= 60
+                };
+            });
+        }
+        const today = getTodayString();
+        const todayStats = getCompletionStats();
+        // Only override if live
+        stats[today] = {
+            percent: todayStats.percent,
+            completed: todayStats.percent >= 60
+        };
+        return stats;
+    }, [dayRecords, categories, getCompletionStats]);
+
+    const scrollToTop = () => {
+        scrollRef.current?.scrollTo({ y: 0, animated: true });
+    };
 
     // Check for new day on mount and set up midnight timer
     useEffect(() => {
@@ -218,10 +264,11 @@ export default function HomeScreen() {
                     <StreakBrokenBanner onDismiss={dismissStreakAlert} />
                 )}
 
-                {/* Weekday Progress Row */}
+                {/* Weekday Progress Row - Scrollable History */}
                 <WeekdayRow
-                    completedDays={weeklyProgress}
-                    currentDayIndex={dayIndex}
+                    selectedDate={selectedDateStr}
+                    onSelectDate={setSelectedDateStr}
+                    historyStats={historyStats}
                 />
 
                 {/* Prayer Times Widget */}
@@ -253,30 +300,47 @@ export default function HomeScreen() {
                 </View>
 
                 {/* Maamulat Categories */}
-                <View style={styles.categoriesSection}>
+                <View
+                    style={styles.categoriesSection}
+                    onLayout={(event) => {
+                        listYRef.current = event.nativeEvent.layout.y;
+                    }}
+                >
                     <Text variant="h3" weight="semibold" style={styles.sectionTitle}>
-                        Today's Maamulat
+                        {isTodayView ? "Today's Maamulat" : "History"}
                     </Text>
 
-                    {categories.map((category) => (
-                        <CategorySection
-                            key={category.id}
-                            category={category}
-                            onToggleItem={handleToggleItem}
-                            onSetTime={setItemTime}
-                        />
-                    ))}
+                    {displayCategories.length > 0 ? (
+                        displayCategories.map((category) => (
+                            <CategorySection
+                                key={category.id}
+                                category={category}
+                                onToggleItem={isTodayView ? handleToggleItem : () => { }}
+                                onSetTime={isTodayView ? setItemTime : () => { }}
+                                readOnly={!isTodayView}
+                            />
+                        ))
+                    ) : (
+                        <View style={{ padding: 32, alignItems: 'center', opacity: 0.7 }}>
+                            <Ionicons name="calendar-outline" size={48} color={colors.textMuted} />
+                            <Text variant="body" color="secondary" style={{ marginTop: 12 }}>
+                                No history recorded for this day
+                            </Text>
+                        </View>
+                    )}
 
-                    {/* Edit Maamulat Button */}
-                    <TouchableOpacity
-                        style={[styles.editButton, { borderColor: colors.border }]}
-                        onPress={() => setShowEditor(true)}
-                    >
-                        <Ionicons name="create-outline" size={20} color={colors.primary} />
-                        <Text variant="body" weight="semibold" style={{ color: colors.primary }}>
-                            Edit Maamulat
-                        </Text>
-                    </TouchableOpacity>
+                    {/* Edit Maamulat Button - Today Only */}
+                    {isTodayView && (
+                        <TouchableOpacity
+                            style={[styles.editButton, { borderColor: colors.border }]}
+                            onPress={() => setShowEditor(true)}
+                        >
+                            <Ionicons name="create-outline" size={20} color={colors.primary} />
+                            <Text variant="body" weight="semibold" style={{ color: colors.primary }}>
+                                Edit Maamulat
+                            </Text>
+                        </TouchableOpacity>
+                    )}
                 </View>
 
                 {/* Scroll to Top */}

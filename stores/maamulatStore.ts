@@ -41,6 +41,7 @@ export interface MaamulatState {
     
     // History
     dayRecords: DayRecord[];
+    history: Record<string, MaamulatCategory[]>; // date -> full categories snapshot
     
     // Basic Actions
     toggleItem: (categoryId: string, itemId: string) => void;
@@ -90,6 +91,7 @@ export const useMaamulatStore = create<MaamulatState>()(
             weekStart: getWeekStartString(),
             weeklyProgress: [false, false, false, false, false, false, false],
             dayRecords: [],
+            history: {},
             
             toggleItem: (categoryId, itemId) => set((state) => ({
                 categories: state.categories.map(cat =>
@@ -146,6 +148,10 @@ export const useMaamulatStore = create<MaamulatState>()(
                 const weekStart = getWeekStartString();
                 
                 if (state.currentDate !== today) {
+                    // Save yesterday's snapshot to history
+                    const history = { ...state.history };
+                    history[state.currentDate] = state.categories;
+
                     // New day - reset tasks
                     let newWeeklyProgress = [...state.weeklyProgress];
                     
@@ -159,6 +165,7 @@ export const useMaamulatStore = create<MaamulatState>()(
                         categories: resetCategories(state.categories),
                         weekStart,
                         weeklyProgress: newWeeklyProgress,
+                        history,
                     });
                     
                     return true;
