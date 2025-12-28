@@ -94,12 +94,14 @@ export function WeekdayRow({ selectedDate, onSelectDate, historyStats = {} }: We
                                     },
                                     // Success/Fail colors (if not selected, or subtle if selected)
                                     !isSelected && hasData && !isToday && isSuccess && {
-                                        backgroundColor: '#D4EFDF', // Pastel Green
-                                        borderColor: 'transparent',
+                                        backgroundColor: '#E8F5E9', // Light Green
+                                        borderWidth: 1.5,
+                                        borderColor: colors.primary + '66', // 40% opacity
                                     },
                                     !isSelected && hasData && !isToday && !isSuccess && {
-                                        backgroundColor: '#FADBD8', // Pastel Red
-                                        borderColor: 'transparent',
+                                        backgroundColor: '#F5F5F5', // Light Grey
+                                        borderWidth: 1.5,
+                                        borderColor: colors.textPrimary + '66', // 40% opacity
                                     },
                                     // Today highlight (always show border if today, unless selected overrides)
                                     isToday && !isSelected && {
@@ -110,28 +112,42 @@ export function WeekdayRow({ selectedDate, onSelectDate, historyStats = {} }: We
                                 ]}
                             >
                                 {/* Text or Icon */}
-                                {isSelected ? (
-                                    <Text variant="bodySmall" weight="bold" style={{ color: colors.textPrimary }}>
-                                        {dayItem.dayNum}
-                                    </Text>
-                                ) : (
-                                    isToday ? (
-                                        <Text variant="bodySmall" weight="semibold" style={{ color: colors.textPrimary }}>
-                                            {dayItem.dayNum}
-                                        </Text>
-                                    ) : (
-                                        hasData ? (
-                                            <Ionicons
-                                                name={isSuccess ? "checkmark" : "close"}
-                                                size={18}
-                                                color={isSuccess ? "#27AE60" : "#C0392B"}
-                                            />
-                                        ) : (
-                                            <Text variant="bodySmall" style={{ color: colors.textMuted }}>
-                                                {dayItem.dayNum}
-                                            </Text>
-                                        )
-                                    )
+                                {/* Date Text (Always Visible) */}
+                                <Text
+                                    variant="bodySmall"
+                                    weight={isSelected || isToday ? 'bold' : 'regular'}
+                                    style={{
+                                        color: isSelected ? colors.textPrimary :
+                                            (isToday ? colors.textPrimary :
+                                                (hasData ? colors.textPrimary : colors.textMuted))
+                                    }}
+                                >
+                                    {dayItem.dayNum}
+                                </Text>
+
+                                {/* Status Badge (Bottom Right) */}
+                                {!isSelected && hasData && !isToday && (
+                                    <View
+                                        style={{
+                                            position: 'absolute',
+                                            bottom: -4,
+                                            right: -4,
+                                            backgroundColor: colors.background, // White bg for contrast
+                                            borderRadius: 8,
+                                            width: 16,
+                                            height: 16,
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            borderWidth: 1,
+                                            borderColor: isSuccess ? colors.primary + '33' : colors.textPrimary + '33',
+                                        }}
+                                    >
+                                        <Ionicons
+                                            name={isSuccess ? "checkmark" : "close"}
+                                            size={10}
+                                            color={isSuccess ? colors.primary : colors.textPrimary}
+                                        />
+                                    </View>
                                 )}
                             </View>
                         </TouchableOpacity>
