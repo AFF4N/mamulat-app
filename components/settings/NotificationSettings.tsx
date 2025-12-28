@@ -61,17 +61,19 @@ export function NotificationSettings() {
                 Notification Reminders
             </Text>
 
-            {settings.map((setting) => (
+            {settings.map((setting, index) => (
                 <View
                     key={setting.id}
-                    style={[styles.row, { borderBottomColor: colors.border }]}
+                    style={[
+                        styles.row,
+                        { borderBottomColor: colors.border },
+                        index === settings.length - 1 && { borderBottomWidth: 0 }
+                    ]}
                 >
-                    <View style={styles.labelContainer}>
-                        <Text variant="body">{setting.title}</Text>
-                        <Text variant="caption" color="secondary" style={{ writingDirection: 'rtl' }}>
-                            {setting.titleUr}
-                        </Text>
-                    </View>
+                    <Text variant="body" style={{ flex: 1 }}>{setting.title}</Text>
+                    <Text variant="caption" color="secondary" style={{ marginRight: spacing.md, writingDirection: 'rtl' }}>
+                        {setting.titleUr}
+                    </Text>
                     <Switch
                         value={setting.enabled}
                         onValueChange={(value) => handleToggle(setting.id, value)}
@@ -97,9 +99,5 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: spacing.sm,
         borderBottomWidth: 1,
-    },
-    labelContainer: {
-        flex: 1,
-        gap: 2,
     },
 });

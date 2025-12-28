@@ -71,6 +71,10 @@ function AchievementBadge({
                 {achievement.nameUr}
             </Text>
 
+            <Text variant="caption" color="muted" align="center" style={{ marginTop: spacing.xs }}>
+                {achievement.description}
+            </Text>
+
             {!achievement.unlocked && (
                 <View style={styles.progressContainer}>
                     <View style={[styles.progressBar, { backgroundColor: colors.surfaceVariant }]}>

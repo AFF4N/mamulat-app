@@ -49,8 +49,9 @@ export default function TabLayout() {
                 },
                 headerTintColor: colors.textPrimary,
                 headerTitleStyle: {
-                    fontWeight: '600',
-                    fontSize: 18,
+                    fontWeight: '800',
+                    fontSize: 22,
+                    fontFamily: 'PlayfairDisplay-Bold',
                 },
                 headerShadowVisible: false,
             }}

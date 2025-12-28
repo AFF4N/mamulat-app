@@ -1,23 +1,26 @@
-import React, { useState } from 'react';
+import React, { useRef, useState, useMemo } from 'react';
 import {
     View,
     ScrollView,
     StyleSheet,
     SafeAreaView,
-    Switch,
     TouchableOpacity,
     TextInput,
     Share,
     Alert,
+    Platform,
+    Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Text, Card, SelectPicker } from '@/components/ui';
-import { NotificationSettings } from '@/components/settings';
+import { Text, Button, Card, SelectPicker } from '@/components/ui';
+import { NotificationSettings } from '@/components/settings/NotificationSettings';
+import { LevelComparisonDrawer } from '@/components/settings/LevelComparisonDrawer';
 import { useTheme } from '@/hooks';
 import { useUserStore, useMaamulatStore } from '@/stores';
 import { formatHasanat } from '@/utils/hasanat';
 import { formatDateUrdu } from '@/utils/dateUtils';
 import { spacing, borderRadius } from '@/constants/Colors';
+import { getAllCategories, getLevelConfig } from '@/config';
 
 /**
  * Settings row component
@@ -27,15 +30,11 @@ function SettingRow({
     value,
     onPress,
     showArrow = false,
-    switchValue,
-    onSwitchChange,
 }: {
     label: string;
     value?: string;
     onPress?: () => void;
     showArrow?: boolean;
-    switchValue?: boolean;
-    onSwitchChange?: (value: boolean) => void;
 }) {
     const { colors } = useTheme();
 
@@ -44,14 +43,6 @@ function SettingRow({
             <Text variant="body">{label}</Text>
             <View style={styles.settingValue}>
                 {value && <Text variant="body" color="secondary">{value}</Text>}
-                {switchValue !== undefined && (
-                    <Switch
-                        value={switchValue}
-                        onValueChange={onSwitchChange}
-                        trackColor={{ false: colors.surfaceVariant, true: colors.primary }}
-                        thumbColor={switchValue ? '#FFFFFF' : colors.textMuted}
-                    />
-                )}
                 {showArrow && <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />}
             </View>
         </View>
@@ -131,10 +122,13 @@ function generateShareMessage(
  */
 export default function ProfileScreen() {
     const { colors, isDark, themeMode, setTheme } = useTheme();
-    const [notifications, setNotifications] = useState(true);
     const [language, setLanguage] = useState('en');
     const [isEditingName, setIsEditingName] = useState(false);
     const [editedName, setEditedName] = useState('');
+
+    // Level Comparison State
+    const [showLevelComparison, setShowLevelComparison] = useState(false);
+    const [targetLevel, setTargetLevel] = useState<string>('');
 
     // Stores
     const {
@@ -286,21 +280,16 @@ export default function ProfileScreen() {
                         />
                     </View>
 
-                    <SettingRow
-                        label="Notifications"
-                        switchValue={notifications}
-                        onSwitchChange={setNotifications}
-                    />
-
                     {/* Level Picker */}
                     <View style={[styles.settingRow, { borderBottomColor: colors.border }]}>
                         <Text variant="body">Level</Text>
                         <SelectPicker
                             value={level}
                             onChange={(val) => {
-                                const newLevel = val as 'beginner' | 'intermediate' | 'advanced';
-                                setLevel(newLevel);
-                                loadLevelTasks(newLevel);
+                                if (val !== level) {
+                                    setTargetLevel(val);
+                                    setShowLevelComparison(true);
+                                }
                             }}
                             options={[
                                 { value: 'beginner', label: 'Beginner' },
@@ -310,6 +299,20 @@ export default function ProfileScreen() {
                         />
                     </View>
                 </Card>
+
+                {/* Level Comparison Drawer */}
+                <LevelComparisonDrawer
+                    visible={showLevelComparison}
+                    onClose={() => setShowLevelComparison(false)}
+                    currentLevel={level}
+                    targetLevel={targetLevel}
+                    onConfirm={(newLevel) => {
+                        const level = newLevel as 'beginner' | 'intermediate' | 'advanced';
+                        setLevel(level);
+                        loadLevelTasks(level);
+                    }}
+                />
+
 
                 {/* Notification Settings */}
                 <Text variant="h3" weight="semibold" style={styles.sectionTitle}>

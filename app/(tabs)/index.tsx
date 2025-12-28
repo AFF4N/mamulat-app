@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
     View,
     ScrollView,
@@ -8,46 +8,32 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Text, Card, Checkbox, TimePicker } from '@/components/ui';
-import { WeekdayRow, ScoreCard, ProgressBar, QuickStats, PrayerTimesWidget } from '@/components/home';
+import { WeekdayRow, ScoreCard, ProgressBar, QuickStats, PrayerTimesWidget, MaamulatEditor } from '@/components/home';
 import { useTheme } from '@/hooks';
 import { useMaamulatStore, useUserStore } from '@/stores';
 import { calculateTaskHasanat, formatHasanat } from '@/utils/hasanat';
 import { formatDateUrdu, getWeekdayIndex, msUntilMidnight } from '@/utils/dateUtils';
 import { spacing, categoryColors } from '@/constants/Colors';
 
-type IoniconsName = keyof typeof Ionicons.glyphMap;
-
-// Category icon mapping
-const CATEGORY_ICONS: Record<string, IoniconsName> = {
-    faraiz: 'sunny',
-    quran: 'book',
-    'azkar-morning': 'partly-sunny',
-    nawafil: 'moon',
-};
 
 /**
  * Streak Broken Alert Banner
  */
 function StreakBrokenBanner({ onDismiss }: { onDismiss: () => void }) {
-    const { colors } = useTheme();
-
     return (
-        <Card variant="elevated" style={[styles.alertBanner, { backgroundColor: '#FFEAEA' }]}>
-            <View style={styles.alertContent}>
-                <Ionicons name="alert-circle" size={24} color="#DC3545" />
-                <View style={styles.alertText}>
-                    <Text variant="body" weight="semibold" style={{ color: '#DC3545' }}>
-                        Streak Broken 😔
-                    </Text>
-                    <Text variant="caption" color="secondary">
-                        You missed completing 60% of tasks yesterday. Start fresh today!
-                    </Text>
-                </View>
-                <TouchableOpacity onPress={onDismiss}>
-                    <Ionicons name="close" size={20} color={colors.textMuted} />
-                </TouchableOpacity>
+        <View style={[styles.alertBanner, { backgroundColor: '#FFEAEA' }]}>
+            <View style={{ flex: 1 }}>
+                <Text variant="body" weight="semibold" style={{ color: '#DC3545' }}>
+                    Streak Broken 😔
+                </Text>
+                <Text variant="caption" style={{ color: '#B02A37' }}>
+                    You missed completing 60% of tasks yesterday. Start fresh today!
+                </Text>
             </View>
-        </Card>
+            <TouchableOpacity onPress={onDismiss} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                <Ionicons name="close" size={18} color="#DC3545" />
+            </TouchableOpacity>
+        </View>
     );
 }
 
@@ -59,22 +45,27 @@ function CategorySection({
     onToggleItem,
     onSetTime,
 }: {
-    category: { id: string; name: string; color: string; items: { id: string; name: string; completed: boolean; isTime?: boolean; timeValue?: string }[] };
+    category: { id: string; name: string; color: string; emoji?: string; items: { id: string; name: string; completed: boolean; isTime?: boolean; timeValue?: string }[] };
     onToggleItem: (categoryId: string, itemId: string) => void;
     onSetTime?: (categoryId: string, itemId: string, time: string) => void;
 }) {
     const { colors } = useTheme();
     const completedCount = category.items.filter(i => i.completed).length;
 
+    // Default emojis for built-in categories
+    const defaultEmojis: Record<string, string> = {
+        faraiz: '🕋',
+        quran: '📖',
+        'azkar-morning': '🌅',
+        nawafil: '🌙',
+    };
+    const emoji = category.emoji || defaultEmojis[category.id] || '📿';
+
     return (
         <Card variant="outlined" style={styles.categoryCard}>
             <View style={[styles.categoryHeader, { borderBottomColor: colors.border }]}>
                 <View style={styles.categoryTitleRow}>
-                    <Ionicons
-                        name={CATEGORY_ICONS[category.id] || 'ellipse'}
-                        size={18}
-                        color={category.color}
-                    />
+                    <Text style={{ fontSize: 16 }}>{emoji}</Text>
                     <Text variant="body" weight="semibold" style={{ writingDirection: 'rtl' }}>
                         {category.name}
                     </Text>
@@ -90,7 +81,7 @@ function CategorySection({
                         {item.isTime ? (
                             // Time picker for schedule items
                             <View style={styles.timeItemRow}>
-                                <Text variant="body" style={{ writingDirection: 'rtl', flex: 1 }}>
+                                <Text variant="body" style={{ flex: 1, textAlign: 'left' }}>
                                     {item.name}
                                 </Text>
                                 <TimePicker
@@ -120,6 +111,12 @@ function CategorySection({
 export default function HomeScreen() {
     const { colors } = useTheme();
     const [currentDate, setCurrentDate] = useState(new Date());
+    const [showEditor, setShowEditor] = useState(false);
+    const scrollRef = useRef<ScrollView>(null);
+
+    const scrollToTop = () => {
+        scrollRef.current?.scrollTo({ y: 0, animated: true });
+    };
 
     // Stores
     const {
@@ -202,15 +199,16 @@ export default function HomeScreen() {
 
     // Quick stats data
     const quickStatsData = [
-        { icon: 'checkmark-circle' as IoniconsName, iconColor: '#27AE60', value: stats.completed, suffix: `/${stats.total}`, label: 'Tasks' },
-        { icon: 'flame' as IoniconsName, iconColor: '#FF6B35', value: currentStreak, label: 'Streak' },
-        { icon: 'star' as IoniconsName, iconColor: '#D4AF37', value: formatHasanat(totalHasanat), label: 'Hasanat' },
-        { icon: 'calendar' as IoniconsName, iconColor: '#9B59B6', value: chillahDay, suffix: '/40', label: 'Chillah' },
+        { icon: 'checkmark-circle', iconColor: '#27AE60', value: stats.completed, suffix: `/${stats.total}`, label: 'Tasks' },
+        { icon: 'flame', iconColor: '#FF6B35', value: currentStreak, label: 'Streak' },
+        { icon: 'star', iconColor: '#D4AF37', value: formatHasanat(totalHasanat), label: 'Hasanat' },
+        { icon: 'calendar', iconColor: '#9B59B6', value: chillahDay, suffix: '/40', label: 'Chillah' },
     ];
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
             <ScrollView
+                ref={scrollRef}
                 style={styles.scrollView}
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
@@ -251,7 +249,7 @@ export default function HomeScreen() {
 
                 {/* Quick Stats */}
                 <View style={styles.section}>
-                    <QuickStats stats={quickStatsData} />
+                    <QuickStats stats={quickStatsData as any} />
                 </View>
 
                 {/* Maamulat Categories */}
@@ -268,8 +266,30 @@ export default function HomeScreen() {
                             onSetTime={setItemTime}
                         />
                     ))}
+
+                    {/* Edit Maamulat Button */}
+                    <TouchableOpacity
+                        style={[styles.editButton, { borderColor: colors.border }]}
+                        onPress={() => setShowEditor(true)}
+                    >
+                        <Ionicons name="create-outline" size={20} color={colors.primary} />
+                        <Text variant="body" weight="semibold" style={{ color: colors.primary }}>
+                            Edit Maamulat
+                        </Text>
+                    </TouchableOpacity>
                 </View>
+
+                {/* Scroll to Top */}
+                <TouchableOpacity onPress={scrollToTop} style={{ padding: spacing.md, alignItems: 'center' }}>
+                    <Text variant="caption" color="secondary">Scroll to Top ↑</Text>
+                </TouchableOpacity>
             </ScrollView>
+
+            {/* Maamulat Editor Modal */}
+            <MaamulatEditor
+                visible={showEditor}
+                onClose={() => setShowEditor(false)}
+            />
         </SafeAreaView>
     );
 }
@@ -289,18 +309,15 @@ const styles = StyleSheet.create({
         marginBottom: spacing.md,
     },
     alertBanner: {
-        marginBottom: spacing.md,
-        borderLeftWidth: 4,
-        borderLeftColor: '#DC3545',
-    },
-    alertContent: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: spacing.sm,
-        padding: spacing.md,
-    },
-    alertText: {
-        flex: 1,
+        marginBottom: spacing.sm,
+        paddingVertical: spacing.sm,
+        paddingHorizontal: spacing.md,
+        borderRadius: 8,
+        borderLeftWidth: 3,
+        borderLeftColor: '#DC3545',
     },
     dateHeader: {
         paddingVertical: spacing.sm,
@@ -339,6 +356,18 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
+        gap: spacing.md,
         paddingVertical: spacing.xs,
+    },
+    editButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: spacing.sm,
+        paddingVertical: spacing.md,
+        marginTop: spacing.md,
+        borderWidth: 2,
+        borderStyle: 'dashed',
+        borderRadius: 12,
     },
 });

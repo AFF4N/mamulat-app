@@ -6,6 +6,7 @@ import {
     TouchableOpacity,
     Pressable,
     Platform,
+    Alert,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Text, Card, Button } from '@/components/ui';
@@ -38,8 +39,16 @@ export default function CounterScreen() {
     }, []);
 
     const handleReset = useCallback(() => {
-        setCount(0);
-    }, []);
+        if (count === 0) return;
+        Alert.alert(
+            'Reset Counter',
+            `Reset ${selectedPreset.nameEn} count to 0?`,
+            [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Reset', style: 'destructive', onPress: () => setCount(0) },
+            ]
+        );
+    }, [count, selectedPreset.nameEn]);
 
     const progress = Math.min((count / selectedPreset.target) * 100, 100);
     const isComplete = count >= selectedPreset.target;
@@ -53,8 +62,28 @@ export default function CounterScreen() {
                         <TouchableOpacity
                             key={preset.id}
                             onPress={() => {
-                                setSelectedPreset(preset);
-                                setCount(0);
+                                if (preset.id === selectedPreset.id) return;
+
+                                if (count > 0) {
+                                    Alert.alert(
+                                        'Switch Dhikr?',
+                                        'Current progress will be lost. maximize your reward by finishing it!',
+                                        [
+                                            { text: 'Cancel', style: 'cancel' },
+                                            {
+                                                text: 'Switch',
+                                                style: 'destructive',
+                                                onPress: () => {
+                                                    setSelectedPreset(preset);
+                                                    setCount(0);
+                                                }
+                                            }
+                                        ]
+                                    );
+                                } else {
+                                    setSelectedPreset(preset);
+                                    setCount(0);
+                                }
                             }}
                             style={[
                                 styles.presetButton,
@@ -62,7 +91,9 @@ export default function CounterScreen() {
                                     backgroundColor: selectedPreset.id === preset.id
                                         ? colors.primary
                                         : colors.surface,
-                                    borderColor: colors.border,
+                                    borderColor: selectedPreset.id === preset.id
+                                        ? colors.primary
+                                        : colors.border,
                                 },
                             ]}
                         >
@@ -103,17 +134,6 @@ export default function CounterScreen() {
                         ]}
                     >
                         <Text style={styles.countText}>{count}</Text>
-                        <View style={styles.progressRing}>
-                            <View
-                                style={[
-                                    styles.progressFill,
-                                    {
-                                        width: `${progress}%`,
-                                        backgroundColor: isComplete ? '#27AE60' : colors.primaryLight,
-                                    },
-                                ]}
-                            />
-                        </View>
                     </Pressable>
 
                     {/* Progress indicator */}
@@ -187,7 +207,6 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.3,
         shadowRadius: 16,
         elevation: 8,
-        overflow: 'hidden',
     },
     countText: {
         fontSize: 64,
@@ -195,17 +214,6 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         color: '#FFFFFF',
         textAlign: 'center',
-    },
-    progressRing: {
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        height: 8,
-        backgroundColor: 'rgba(255,255,255,0.2)',
-    },
-    progressFill: {
-        height: '100%',
     },
     actions: {
         flexDirection: 'row',

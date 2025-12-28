@@ -18,6 +18,7 @@ export interface MaamulatCategory {
     name: string;
     nameEn: string;
     color: string;
+    emoji?: string;
     items: MaamulatItem[];
 }
 
@@ -41,13 +42,23 @@ export interface MaamulatState {
     // History
     dayRecords: DayRecord[];
     
-    // Actions
+    // Basic Actions
     toggleItem: (categoryId: string, itemId: string) => void;
     setItemTime: (categoryId: string, itemId: string, time: string) => void;
     getCompletionStats: () => { completed: number; total: number; percent: number };
     checkAndResetDay: () => boolean;
     recordDayEnd: () => DayRecord;
     loadLevelTasks: (level: Level) => void;
+    
+    // Editing Actions
+    addItem: (categoryId: string, item: Omit<MaamulatItem, 'completed'>) => void;
+    removeItem: (categoryId: string, itemId: string) => void;
+    updateItem: (categoryId: string, itemId: string, updates: Partial<MaamulatItem>) => void;
+    addCategory: (category: Omit<MaamulatCategory, 'items'>) => void;
+    removeCategory: (categoryId: string) => void;
+    updateCategory: (categoryId: string, updates: Partial<MaamulatCategory>) => void;
+    reorderCategories: (fromIndex: number, toIndex: number) => void;
+    reorderItems: (categoryId: string, fromIndex: number, toIndex: number) => void;
 }
 
 // Convert config categories to store categories (with completed state)
@@ -187,6 +198,67 @@ export const useMaamulatStore = create<MaamulatState>()(
                     categories: configToStoreCategories(level),
                 });
             },
+            
+            // Editing Actions
+            addItem: (categoryId, item) => set((state) => ({
+                categories: state.categories.map(cat =>
+                    cat.id === categoryId
+                        ? { ...cat, items: [...cat.items, { ...item, completed: false }] }
+                        : cat
+                ),
+            })),
+            
+            removeItem: (categoryId, itemId) => set((state) => ({
+                categories: state.categories.map(cat =>
+                    cat.id === categoryId
+                        ? { ...cat, items: cat.items.filter(item => item.id !== itemId) }
+                        : cat
+                ),
+            })),
+            
+            updateItem: (categoryId, itemId, updates) => set((state) => ({
+                categories: state.categories.map(cat =>
+                    cat.id === categoryId
+                        ? {
+                            ...cat,
+                            items: cat.items.map(item =>
+                                item.id === itemId ? { ...item, ...updates } : item
+                            ),
+                        }
+                        : cat
+                ),
+            })),
+            
+            addCategory: (category) => set((state) => ({
+                categories: [...state.categories, { ...category, items: [] }],
+            })),
+            
+            removeCategory: (categoryId) => set((state) => ({
+                categories: state.categories.filter(cat => cat.id !== categoryId),
+            })),
+            
+            updateCategory: (categoryId, updates) => set((state) => ({
+                categories: state.categories.map(cat =>
+                    cat.id === categoryId ? { ...cat, ...updates } : cat
+                ),
+            })),
+            
+            reorderCategories: (fromIndex, toIndex) => set((state) => {
+                const newCategories = [...state.categories];
+                const [removed] = newCategories.splice(fromIndex, 1);
+                newCategories.splice(toIndex, 0, removed);
+                return { categories: newCategories };
+            }),
+            
+            reorderItems: (categoryId, fromIndex, toIndex) => set((state) => ({
+                categories: state.categories.map(cat => {
+                    if (cat.id !== categoryId) return cat;
+                    const newItems = [...cat.items];
+                    const [removed] = newItems.splice(fromIndex, 1);
+                    newItems.splice(toIndex, 0, removed);
+                    return { ...cat, items: newItems };
+                }),
+            })),
         }),
         {
             name: 'maamulat-storage',
